@@ -1,0 +1,29 @@
+on:
+  push:
+  workflow_dispatch:
+
+env:
+  IMAGE: ghcr.io/jcansdale-test/first:latest
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Create a Dockerfile
+        run: |
+          echo 'FROM alpine' > Dockerfile
+          echo 'ENTRYPOINT ["echo", "Hello from ${{ github.repository }}!"]' >> Dockerfile
+          echo 'LABEL org.opencontainers.image.description "This image was built from commit ${{ github.sha }}"' >> Dockerfile
+          # echo 'LABEL org.opencontainers.image.source=https://github.com/jcansdale-test-myorg/the-power' >> Dockerfile
+
+      - name: Build image
+        run: docker build . -t ${IMAGE,,} # lowercase IMAGE
+
+      - name: Login to ghcr.io
+        run: docker login https://ghcr.io -u token --password-stdin <<< ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish image
+        run: docker push ${IMAGE,,} # lowercase IMAGE
